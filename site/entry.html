@@ -6,7 +6,11 @@
 <title>条目评审 · Operit-wiki</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="vendor/marked.min.js"></script>
+<script>
+/* 本地兜底仍失败时（极少见），给出可读提示而非空白页 */
+function markedReady() { return typeof marked !== "undefined" && typeof marked.parse === "function"; }
+</script>
 </head>
 <body>
 <div class="topbar">
@@ -90,6 +94,10 @@ async function load() {
 
   const box = document.getElementById("content");
   if (!e) { box.innerHTML = `<div class="empty">找不到该条目。</div>`; return; }
+  if (!markedReady()) {
+    box.innerHTML = `<div class="empty">正文渲染组件加载失败，请刷新重试；若持续失败请检查网络后联系管理员。</div>`;
+    return;
+  }
   // 注意：utterances 用 issue-term="title" 精确匹配 Issue 标题，
   // document.title 必须与 issue_title 完全一致，否则会新建重复 Issue
   document.title = e.issue_title || ("[评审] " + e.title);
