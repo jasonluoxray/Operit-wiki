@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wiki · Operit-wiki</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css?v=36003d4">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="style.css?v=5e2f848">
+<script src="vendor/marked.min.js"></script>
+<script>
+function markedReady() { return typeof marked !== "undefined" && typeof marked.parse === "function"; }
+</script>
 <style>
   /* ---- 正式 wiki：文件树 + 正文 + 页内目录 ---- */
   #menu-btn { display: none; border: 1px solid rgba(255,255,255,.12); background: none; color: #fff;
@@ -228,6 +231,11 @@ function buildToc() {
 function select(id, push = true) {
   const item = FLAT.find(f => f.id === id);
   if (!item) return;
+  if (!markedReady()) {
+    document.getElementById("page-title").textContent = "渲染组件加载失败";
+    document.getElementById("page-body").innerHTML = `<div class="empty">正文渲染组件加载失败，请刷新重试；若持续失败请检查网络后联系管理员。</div>`;
+    return;
+  }
   const ch = DATA.chapters.find(c => c.chapter === item.chapter);
   const p = ch.pages.find(x => x.id === id);
   document.title = p.title + " · Operit-wiki";
@@ -298,9 +306,15 @@ fetch("data/wiki/pages.json")
     const exists = FLAT.some(f => f.id === want);
     select(exists ? want : FLAT[0].id, false);
   })
-  .catch(() => {
-    document.getElementById("page-title").textContent = "数据未生成";
-    document.getElementById("page-body").innerHTML = `<div class="empty">pages.json 缺失，请重新部署。</div>`;
+  .catch((err) => {
+    // 渲染阶段抛错（marked 缺失等）与数据拉取失败要区分提示，避免误报"缺失请重新部署"
+    if (DATA && FLAT.length) {
+      document.getElementById("page-title").textContent = "页面渲染失败";
+      document.getElementById("page-body").innerHTML = `<div class="empty">正文渲染失败，请刷新重试；若持续失败请联系管理员。</div>`;
+    } else {
+      document.getElementById("page-title").textContent = "数据未生成";
+      document.getElementById("page-body").innerHTML = `<div class="empty">pages.json 缺失，请重新部署。</div>`;
+    }
   });
 </script>
 </body>
